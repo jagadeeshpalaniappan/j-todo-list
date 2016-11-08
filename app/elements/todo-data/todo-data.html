@@ -1,0 +1,107 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+
+<link rel="import" href="../../bower_components/firebase-element/firebase-collection.html">
+
+<!--
+
+<link rel="import" href="../../bower_components/polymerfire/firebase-query.html">
+
+-->
+
+<link rel="import" href="../../bower_components/iron-localstorage/iron-localstorage.html">
+
+
+<dom-module id="todo-data">
+
+  <template>
+
+    <style>
+
+    </style>
+
+
+    <!--
+    <firebase-query
+      id="query"
+      app-name="test"
+      path="{{userLocation}}"
+      data="{{fbTodos}}"
+      on-firebase-value="_firebaseLoaded">
+    </firebase-query>
+
+    -->
+
+
+    <firebase-collection location="{{userLocation}}"
+                         data="{{fbTodos}}"
+                         on-firebase-value="_firebaseLoaded">
+    </firebase-collection>
+
+
+    <!-- Backfill todos from localstorage. This prevents an initial flash while
+         we're waiting to hear from Firebase, and it lets the user see their
+         old todos if they start the app offline.
+         This SHOULD NOT write to Firebase. If the user has cleared their
+         localstorage, it should not nullify everything saved in Firebase. -->
+    <iron-localstorage name="polymer-todo"
+                       on-iron-localstorage-load="_backupLoaded"
+                       value="{{backupTodos}}">
+    </iron-localstorage>
+
+  </template>
+  <script>
+    Polymer({
+
+      is: 'todo-data',
+
+      properties: {
+
+        todos: {
+          notify: true
+        },
+
+        user: {
+          observer: '_userChanged'
+        },
+
+        _firebaseConnected: {
+          value: false
+        }
+
+      },
+
+      // Setup user ref in firebase if auth succeeds
+      _userChanged: function(user) {
+        if (user) {
+          this.userLocation = [this.location, 'users', this.user.uid].join('/');
+          console.log(this.userLocation);
+        }
+      },
+
+      _firebaseLoaded: function() {
+        this._firebaseConnected = true;
+        this.todos = this.fbTodos;
+        this.backupTodos = this.fbTodos;
+        this.linkPaths('fbTodos', 'todos');
+        this.linkPaths('backupTodos', 'todos');
+      },
+
+      _backupLoaded: function() {
+        if (!this._firebaseConnected) {
+          this.todos = this.backupTodos.slice();
+        }
+      }
+
+    });
+
+  </script>
+</dom-module>
